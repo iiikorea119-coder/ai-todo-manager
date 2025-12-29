@@ -219,7 +219,7 @@ const LoginPage = () => {
               AI 할 일 관리
             </h1>
             <p className="text-muted-foreground mt-2">
-              AI가 도와주는 스마트한 할 일 관리 서비스
+              AI가 도와주는 스마트한 할 일 관리
             </p>
           </div>
         </div>
