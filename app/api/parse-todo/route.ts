@@ -334,7 +334,7 @@ export async function POST(req: NextRequest) {
     text = text.replace(/\s+/g, ' ');
     
     // 쉼표로 구분된 여러 할 일 감지
-    const todoTexts = text.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    const todoTexts = text.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0);
     const isMultipleTodos = todoTexts.length > 1;
     
     // 여러 할 일이 입력된 경우 각각 검증
@@ -493,7 +493,7 @@ export async function POST(req: NextRequest) {
       try {
         // 각 할 일을 병렬로 파싱
         const parsedTodos = await Promise.all(
-          todoTexts.map(todoText => parseSingleTodo(todoText, apiKey))
+          todoTexts.map((todoText: string) => parseSingleTodo(todoText, apiKey))
         );
         
         console.log('✅ 여러 할 일 파싱 완료:', parsedTodos.length, '개');
