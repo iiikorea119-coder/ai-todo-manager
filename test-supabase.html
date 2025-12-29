@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Supabase API 키 테스트</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background: #3B82F6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2563EB;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .success {
+            background: #D1FAE5;
+            color: #065F46;
+            border: 1px solid #10B981;
+        }
+        .error {
+            background: #FEE2E2;
+            color: #991B1B;
+            border: 1px solid #EF4444;
+        }
+        .info {
+            background: #DBEAFE;
+            color: #1E40AF;
+            border: 1px solid #3B82F6;
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-top: 15px;
+        }
+        .hint {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔑 Supabase API 키 테스트</h1>
+        <p>Supabase 대시보드 (Settings → API)에서 값을 복사하여 붙여넣으세요.</p>
+        
+        <label>Project URL:</label>
+        <input type="text" id="url" placeholder="https://xxxxx.supabase.co" value="https://uyjqbdyrbdsiydyjslus.supabase.co">
+        <div class="hint">예: https://xxxxx.supabase.co</div>
+        
+        <label>anon public 키:</label>
+        <input type="text" id="key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        <div class="hint">⚠️ eyJ로 시작하는 긴 문자열이어야 합니다. sb_로 시작하면 안 됩니다!</div>
+        
+        <button onclick="testConnection()">🧪 API 키 테스트</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function testConnection() {
+            const url = document.getElementById('url').value.trim();
+            const key = document.getElementById('key').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            // 입력 검증
+            if (!url || !key) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ URL과 API 키를 모두 입력해주세요.';
+                return;
+            }
+            
+            // URL 형식 검증
+            if (!url.startsWith('https://') || !url.includes('.supabase.co')) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ URL 형식이 올바르지 않습니다.\n올바른 형식: https://xxxxx.supabase.co';
+                return;
+            }
+            
+            // API 키 형식 검증
+            if (key.startsWith('sb_')) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '❌ 잘못된 API 키 형식입니다!\n\nsb_로 시작하는 키는 올바른 anon public 키가 아닙니다.\n\nSupabase 대시보드에서:\n1. Settings → API 메뉴\n2. "anon public" 섹션 찾기\n3. eyJ로 시작하는 긴 키 복사\n\n⚠️ "service_role"이 아닌 "anon public" 키를 복사하세요!';
+                return;
+            }
+            
+            if (!key.startsWith('eyJ')) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = '⚠️ API 키가 의심스럽습니다.\n\n올바른 Supabase anon public 키는 "eyJ"로 시작하는 JWT 토큰입니다.\n\n그래도 테스트를 진행합니다...';
+            }
+            
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '⏳ 테스트 중...\n\nSupabase에 연결을 시도하고 있습니다...';
+            
+            try {
+                // Supabase REST API 테스트
+                const response = await fetch(`${url}/rest/v1/`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': key,
+                        'Authorization': `Bearer ${key}`
+                    }
+                });
+                
+                const status = response.status;
+                const statusText = response.statusText;
+                
+                let message = `📊 응답 상태: ${status} ${statusText}\n\n`;
+                
+                if (status === 200 || status === 404) {
+                    message += '✅ API 키가 올바릅니다!\n\n';
+                    message += '성공 사항:\n';
+                    message += '✓ Supabase 서버에 연결 성공\n';
+                    message += '✓ API 키가 유효함\n';
+                    message += '✓ 인증 통과\n\n';
+                    message += '다음 단계:\n';
+                    message += '1. 이 키를 .env.local 파일에 복사하세요\n';
+                    message += '2. NEXT_PUBLIC_SUPABASE_URL=' + url + '\n';
+                    message += '3. NEXT_PUBLIC_SUPABASE_ANON_KEY=' + key.substring(0, 30) + '...\n';
+                    message += '4. NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=' + key.substring(0, 30) + '...\n';
+                    message += '5. 개발 서버 재시작 (Ctrl+C 후 npm run dev)\n';
+                    message += '6. 브라우저 새로고침 후 회원가입 시도';
+                    
+                    resultDiv.className = 'result success';
+                } else if (status === 401 || status === 403) {
+                    message += '❌ API 키가 올바르지 않습니다!\n\n';
+                    message += '문제: 인증 실패\n\n';
+                    message += '해결 방법:\n';
+                    message += '1. Supabase 대시보드 접속\n';
+                    message += '2. Settings → API 메뉴\n';
+                    message += '3. "anon public" 키를 다시 복사\n';
+                    message += '4. eyJ로 시작하는지 확인\n';
+                    message += '5. 전체 키를 복사했는지 확인 (매우 긴 문자열)\n\n';
+                    message += '⚠️ "service_role" 키가 아닌 "anon public" 키를 사용하세요!';
+                    
+                    resultDiv.className = 'result error';
+                } else {
+                    message += '⚠️ 예상치 못한 응답\n\n';
+                    message += '응답 내용:\n' + await response.text();
+                    resultDiv.className = 'result error';
+                }
+                
+                resultDiv.textContent = message;
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 연결 실패\n\n에러: ${error.message}\n\n가능한 원인:\n1. URL이 잘못되었습니다\n2. 인터넷 연결 문제\n3. Supabase 프로젝트가 존재하지 않습니다\n\n확인 사항:\n- URL이 https://xxxxx.supabase.co 형식인지 확인\n- Supabase 대시보드에서 프로젝트가 Active 상태인지 확인`;
+            }
+        }
+    </script>
+</body>
+</html>
+

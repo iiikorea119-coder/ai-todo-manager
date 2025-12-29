@@ -1,0 +1,394 @@
+# AI 할 일 관리 웹 서비스 - 개발 규칙
+
+이 문서는 "AI 할 일 관리 웹 서비스" 프로젝트의 개발 규칙과 가이드라인을 정의합니다.
+
+## 1. 프로젝트 개요
+
+### 프로젝트 특성
+- **프레임워크**: Next.js 15 App Router 기반의 웹 애플리케이션
+- **핵심 가치**: 사용자 경험 최우선
+  - 모든 비동기 작업에 로딩 상태 UI 제공
+  - 데이터가 없는 경우 빈 상태(Empty State) UI 제공
+  - 오류 발생 시 명확한 오류 상태 UI 제공
+  - 상호작용 지연을 최소화 (Optimistic UI 패턴 적용)
+
+### 오류 처리 원칙
+- **서버 컴포넌트**: try-catch로 예외를 포착하고 error.tsx에서 처리
+- **클라이언트 컴포넌트**: try-catch + 에러 상태 관리
+- **사용자 메시지**: 항상 한글로 친절하고 이해하기 쉬운 메시지 제공
+- **개발 환경**: console.error()로 상세한 오류 정보 출력
+- **프로덕션 환경**: 민감한 정보를 노출하지 않음
+
+## 2. 기술 스택
+
+### 필수 기술
+- **Next.js 15**: App Router 사용 필수
+- **TypeScript**: 모든 파일은 .ts 또는 .tsx, strict 모드 권장
+- **Tailwind CSS**: 모든 스타일링의 기본
+- **Shadcn/ui**: UI 컴포넌트 라이브러리
+- **Supabase**: 인증(Auth) 및 데이터베이스
+- **AI SDK**: AI 모델 연동
+- **ESLint**: Next.js 및 TypeScript 규칙 기반
+
+### 권장 도구
+- Prettier: 코드 포매팅 일관성 유지
+- Husky: Git hooks를 통한 품질 검증
+
+## 3. 코딩 스타일
+
+### 컴포넌트 작성 규칙
+```typescript
+// ✅ 올바른 예시
+/**
+ * 할 일 목록을 표시하는 컴포넌트
+ */
+const TodoList = () => {
+  return <div>...</div>;
+};
+
+export default TodoList;
+```
+
+```typescript
+// ❌ 잘못된 예시
+// function 키워드 사용 금지
+function TodoList() {
+  return <div>...</div>;
+}
+```
+
+### 핵심 규칙
+1. **함수형 컴포넌트**: React.FC 대신 암시적 타입 사용
+2. **화살표 함수 필수**: 모든 함수는 화살표 함수로 작성
+3. **파일명 규칙**:
+   - 컴포넌트: 파스칼 케이스 (예: `TodoList.tsx`, `UserProfile.tsx`)
+   - 유틸리티: 케밥 케이스 (예: `format-date.ts`, `api-client.ts`)
+   - 타입/인터페이스: 파스칼 케이스 (예: `TodoTypes.ts`)
+
+### 주석 작성 규칙
+```typescript
+/**
+ * 날짜를 한국 시간대에 맞춰 포맷팅합니다.
+ * @param date - 포맷할 날짜 객체
+ * @returns 포맷된 날짜 문자열 (YYYY-MM-DD)
+ */
+const formatDate = (date: Date): string => {
+  // 구현 내용...
+};
+```
+
+- **필수**: 모든 함수와 컴포넌트 상단에 한글 개요 작성
+- **JSDoc**: 매개변수와 반환값에 대한 한글 설명 포함
+- **인라인 주석**: 복잡한 로직에는 한글로 설명 추가
+
+### TypeScript 규칙
+```typescript
+// ✅ 명시적 타입 정의
+interface Todo {
+  id: string;
+  title: string;
+  completed: boolean;
+  createdAt: Date;
+}
+
+// ✅ 함수 매개변수 타입 지정
+const createTodo = (title: string, userId: string): Promise<Todo> => {
+  // 구현...
+};
+
+// ❌ any 사용 금지 (불가피한 경우 unknown 사용)
+const badFunction = (data: any) => {
+  // 금지
+};
+```
+
+### ESLint 규칙 준수
+- `eslint-config-next` 기본 규칙 적용
+- `@typescript-eslint` 권장 규칙 적용
+- 커밋 전 `npm run lint` 통과 필수
+
+## 4. 프로젝트 구조
+
+### 디렉토리 구조
+```
+app/
+├── (auth)/              # 인증 관련 라우트 그룹
+│   ├── login/
+│   └── signup/
+├── (dashboard)/         # 대시보드 라우트 그룹
+│   ├── todos/
+│   └── settings/
+├── api/                 # API 라우트
+├── layout.tsx           # 루트 레이아웃
+└── page.tsx             # 홈 페이지
+
+components/
+├── ui/                  # Shadcn/ui 컴포넌트
+└── features/            # 기능별 컴포넌트
+    ├── todos/
+    └── auth/
+
+lib/
+├── supabase/            # Supabase 클라이언트
+├── ai/                  # AI SDK 관련
+└── utils/               # 유틸리티 함수
+
+types/
+└── index.ts             # 공통 타입 정의
+```
+
+### 파일 명명 규칙
+- **페이지**: `page.tsx`
+- **레이아웃**: `layout.tsx`
+- **로딩 상태**: `loading.tsx`
+- **오류 처리**: `error.tsx`
+- **Not Found**: `not-found.tsx`
+
+## 5. 사용자 경험(UX) 가이드
+
+### 로딩 상태
+```typescript
+/**
+ * 할 일 목록 페이지 로딩 상태
+ */
+const Loading = () => {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+      <Skeleton className="h-12 w-full" />
+    </div>
+  );
+};
+```
+
+### 빈 상태
+```typescript
+/**
+ * 데이터가 없을 때 표시하는 빈 상태 UI
+ */
+const EmptyState = () => {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <p className="text-muted-foreground mb-4">
+        아직 할 일이 없습니다.
+      </p>
+      <Button>새 할 일 추가</Button>
+    </div>
+  );
+};
+```
+
+### 오류 상태
+```typescript
+/**
+ * 오류 발생 시 표시하는 오류 바운더리
+ */
+'use client';
+
+const Error = ({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) => {
+  return (
+    <div className="flex flex-col items-center justify-center py-12">
+      <h2 className="text-lg font-semibold mb-4">
+        문제가 발생했습니다
+      </h2>
+      <p className="text-muted-foreground mb-4">
+        잠시 후 다시 시도해 주세요.
+      </p>
+      <Button onClick={reset}>다시 시도</Button>
+    </div>
+  );
+};
+```
+
+## 6. 데이터 페칭 전략
+
+### 서버 컴포넌트 (권장)
+```typescript
+/**
+ * 서버에서 할 일 목록을 가져오는 페이지
+ */
+const TodosPage = async () => {
+  try {
+    const todos = await getTodos();
+    
+    if (todos.length === 0) {
+      return <EmptyState />;
+    }
+    
+    return <TodoList todos={todos} />;
+  } catch (error) {
+    console.error('할 일 목록 조회 실패:', error);
+    throw new Error('할 일 목록을 불러올 수 없습니다.');
+  }
+};
+```
+
+### 클라이언트 컴포넌트
+```typescript
+'use client';
+
+/**
+ * 클라이언트에서 할 일을 추가하는 컴포넌트
+ */
+const AddTodoForm = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (title: string) => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      await createTodo(title);
+      // 성공 처리
+    } catch (err) {
+      console.error('할 일 추가 실패:', err);
+      setError('할 일을 추가할 수 없습니다. 다시 시도해 주세요.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && <ErrorMessage>{error}</ErrorMessage>}
+      <Button disabled={isLoading}>
+        {isLoading ? '추가 중...' : '추가'}
+      </Button>
+    </form>
+  );
+};
+```
+
+## 7. 스타일링 가이드
+
+### Tailwind CSS 사용 원칙
+- **유틸리티 우선**: 인라인 Tailwind 클래스 사용
+- **커스텀 컴포넌트**: 재사용 가능한 UI는 Shadcn/ui 활용
+- **다크 모드**: `dark:` prefix로 다크 모드 스타일 정의
+- **반응형**: 모바일 우선 (sm, md, lg 브레이크포인트)
+
+```typescript
+// ✅ 올바른 예시
+<div className="flex flex-col gap-4 p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm">
+  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+    제목
+  </h2>
+</div>
+```
+
+### 색상 체계
+- Primary: Tailwind의 blue 계열
+- Success: green 계열
+- Error: red 계열
+- Warning: yellow 계열
+- Muted: gray 계열
+
+## 8. 성능 최적화
+
+### 이미지 최적화
+```typescript
+import Image from 'next/image';
+
+// ✅ Next.js Image 컴포넌트 사용
+<Image
+  src="/profile.jpg"
+  alt="프로필 이미지"
+  width={200}
+  height={200}
+  priority={false}
+/>
+```
+
+### 폰트 최적화
+```typescript
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
+```
+
+### 동적 임포트
+```typescript
+// 큰 컴포넌트는 동적 임포트
+const HeavyComponent = dynamic(() => import('@/components/HeavyComponent'), {
+  loading: () => <Skeleton />,
+});
+```
+
+## 9. 보안 및 인증
+
+### Supabase 인증
+- **서버 컴포넌트**: `createServerClient` 사용
+- **클라이언트 컴포넌트**: `createBrowserClient` 사용
+- **미들웨어**: 보호된 라우트는 middleware.ts에서 처리
+
+### 환경 변수
+```typescript
+// ✅ 클라이언트에서 사용 (NEXT_PUBLIC_ 접두사)
+const publicKey = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+// ✅ 서버에서만 사용
+const secretKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+```
+
+## 10. 테스트 전략
+
+### 단위 테스트
+- 순수 함수와 유틸리티에 우선 적용
+- Jest 및 React Testing Library 사용
+
+### E2E 테스트
+- 핵심 사용자 플로우에 Playwright 적용
+
+## 11. Git 커밋 규칙
+
+### 커밋 메시지 형식
+```
+<타입>: <제목>
+
+<본문>
+
+<푸터>
+```
+
+### 타입
+- `feat`: 새로운 기능
+- `fix`: 버그 수정
+- `docs`: 문서 수정
+- `style`: 코드 포맷팅
+- `refactor`: 리팩토링
+- `test`: 테스트 추가/수정
+- `chore`: 빌드 설정 등
+
+### 예시
+```
+feat: 할 일 추가 기능 구현
+
+- TodoForm 컴포넌트 생성
+- createTodo API 함수 추가
+- 낙관적 UI 업데이트 적용
+
+Closes #123
+```
+
+## 12. 체크리스트
+
+### PR 생성 전 체크리스트
+- [ ] ESLint 통과 (`npm run lint`)
+- [ ] TypeScript 컴파일 오류 없음 (`npm run build`)
+- [ ] 모든 컴포넌트에 한글 주석 작성
+- [ ] 로딩/빈 상태/오류 상태 UI 구현
+- [ ] 반응형 디자인 확인 (모바일/태블릿/데스크톱)
+- [ ] 접근성 검증 (키보드 네비게이션, ARIA 속성)
+
+---
+
+**마지막 업데이트**: 2025-12-24
+**문서 버전**: 1.0

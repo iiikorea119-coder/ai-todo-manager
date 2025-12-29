@@ -1,0 +1,42 @@
+/**
+ * Next.js 미들웨어
+ * 인증이 필요한 페이지를 보호하고 Supabase 세션을 갱신
+ * 
+ * 사용 방법:
+ * 1. 이 파일을 middleware.ts로 이름 변경
+ * 2. 필요에 따라 보호할 경로 수정
+ */
+import { updateSession } from '@/lib/supabase/middleware';
+import { NextResponse, type NextRequest } from 'next/server';
+
+/**
+ * 미들웨어 함수
+ */
+export const middleware = async (request: NextRequest) => {
+  const { supabaseResponse, user } = await updateSession(request);
+
+  // 인증이 필요한 페이지 (로그인하지 않은 사용자는 /login으로 리다이렉트)
+  if (request.nextUrl.pathname.startsWith('/todos')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
+
+  // 로그인한 사용자가 인증 페이지 접근 시 메인 페이지로 리다이렉트
+  if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
+  return supabaseResponse;
+};
+
+/**
+ * 미들웨어가 적용될 경로
+ * 정적 파일과 이미지는 제외
+ */
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
+
